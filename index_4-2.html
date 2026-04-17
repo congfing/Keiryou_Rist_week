@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>計量メモ テンプレート</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f0f4f8; color: #333; min-height: 100vh; }
+
+/* ===== HEADER ===== */
+.header { background: #0f766e; color: white; padding: 10px 14px 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.header-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.back-btn { background: rgba(255,255,255,0.2); border: none; color: white; font-size: 13px; font-weight: bold;
+  cursor: pointer; padding: 5px 10px; border-radius: 8px; white-space: nowrap; display: none; }
+.header-title { font-size: 17px; font-weight: bold; flex: 1; }
+.day-btns { display: flex; gap: 5px; }
+.day-btn { flex: 1; padding: 8px 0; font-size: 15px; font-weight: bold;
+  background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 8px; color: rgba(255,255,255,0.85); cursor: pointer; }
+.day-btn.active { background: white; color: #0f766e; border-color: white; }
+.day-btn.sat { color: #93c5fd; } .day-btn.sun { color: #fca5a5; }
+.day-btn.sat.active { color: #1d4ed8; } .day-btn.sun.active { color: #dc2626; }
+
+/* ===== SCREENS ===== */
+.screen { display: none; padding: 12px 14px 100px; max-width: 500px; margin: 0 auto; }
+.screen.active { display: block; }
+
+/* ===== TOOLBAR ===== */
+.toolbar { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+.toolbar-label { font-size: 13px; color: #666; flex: 1; }
+.tool-btn { font-size: 12px; padding: 6px 12px; border: none; border-radius: 7px; cursor: pointer; font-weight: bold; }
+.btn-all { background: #e0f2fe; color: #0369a1; }
+.btn-none { background: #fce7f3; color: #9d174d; }
+
+/* ===== PROP ROW ===== */
+.prop-row { display: flex; align-items: center; background: white; border-radius: 10px;
+  margin-bottom: 7px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); padding: 10px; gap: 8px; }
+.prop-body { flex: 1; cursor: pointer; min-width: 0; }
+.prop-name { font-size: 14px; font-weight: 600; }
+.prop-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.prop-check-icon { font-size: 22px; flex-shrink: 0; }
+.prop-arrow { color: #cbd5e1; font-size: 16px; flex-shrink: 0; }
+.order-input { width: 42px; height: 36px; text-align: center; font-size: 15px; font-weight: bold;
+  border: 2px solid #e2e8f0; border-radius: 8px; color: #0f766e; outline: none; flex-shrink: 0; }
+.order-input:focus { border-color: #0f766e; background: #f0fdf4; }
+
+/* ===== DETAIL SCREEN ===== */
+.section-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+.section-sub { font-size: 12px; color: #888; margin-bottom: 14px; }
+.card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.field-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; gap: 10px; }
+.field-row:last-child { border-bottom: none; }
+.field-check { width: 22px; height: 22px; accent-color: #0f766e; cursor: pointer; flex-shrink: 0; }
+.field-label { flex: 1; font-size: 15px; font-weight: 500; }
+.field-unit { font-size: 13px; color: #888; }
+.field-val { font-size: 15px; font-weight: bold; color: #0f766e; min-width: 32px; text-align: right; }
+
+/* ===== BUTTONS ===== */
+.btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 10px;
+  font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+.btn-primary { background: #0f766e; color: white; }
+.btn-secondary { background: #e2e8f0; color: #444; }
+.btn-save-text { background: #0f766e; color: white; }
+.btn-save-text:disabled { background: #94a3b8; }
+
+/* ===== FOOTER ===== */
+.footer { position: fixed; bottom: 0; left: 0; right: 0; background: white;
+  padding: 12px 16px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 50; }
+.footer-inner { max-width: 500px; margin: 0 auto; }
+
+/* ===== MISC ===== */
+.empty-msg { text-align: center; color: #aaa; font-size: 14px; padding: 40px 0; }
+.version { text-align: center; font-size: 11px; color: #ccc; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-row">
+    <button class="back-btn" id="backBtn" onclick="goBack()">← 戻る</button>
+    <div class="header-title" id="headerTitle">📋 計量メモ テンプレート</div>
+  </div>
+  <div class="day-btns" id="dayBtns">
+    <button class="day-btn"     id="btn月" onclick="selectDay('月')">月</button>
+    <button class="day-btn"     id="btn火" onclick="selectDay('火')">火</button>
+    <button class="day-btn"     id="btn水" onclick="selectDay('水')">水</button>
+    <button class="day-btn"     id="btn木" onclick="selectDay('木')">木</button>
+    <button class="day-btn"     id="btn金" onclick="selectDay('金')">金</button>
+    <button class="day-btn sat" id="btn土" onclick="selectDay('土')">土</button>
+    <button class="day-btn sun" id="btn日" onclick="selectDay('日')">日</button>
+  </div>
+</div>
+
+<!-- Screen 1: Property List -->
+<div class="screen active" id="screen1">
+  <div class="toolbar">
+    <span class="toolbar-label" id="toolbarLabel">曜日を選択してください</span>
+    <button class="tool-btn btn-all"  onclick="selectAll()">全選択</button>
+    <button class="tool-btn btn-none" onclick="selectNone()">全解除</button>
+  </div>
+  <div id="propList"></div>
+  <div class="version">index_4-2.html</div>
+</div>
+
+<!-- Screen 2: Field Detail -->
+<div class="screen" id="screen2">
+  <div class="section-title" id="detailTitle"></div>
+  <div class="section-sub">含める項目にチェックを入れてください</div>
+  <div class="card" id="fieldList"></div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-inner">
+    <!-- Screen 1 footer -->
+    <div id="footer1">
+      <button class="btn btn-save-text" id="saveBtn" onclick="saveText()" disabled>📄 TEXT保存</button>
+    </div>
+    <!-- Screen 2 footer -->
+    <div id="footer2" style="display:none">
+      <button class="btn btn-primary" onclick="saveDetail()">保存して戻る ✓</button>
+      <button class="btn btn-secondary" style="background:#fee2e2;color:#dc2626" onclick="uncheckProp(currentPropName);goBack()">✅ を外して戻る</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const DEFAULT_PROPERTIES = [
+  { name:'ほっともっと桑町',   order:1,  fields:[{label:'紙屑',unit:'袋'},{label:'生ごみ',unit:'kg'},{label:'廃プラ',unit:'袋'},{label:'ペットボトル',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'ほっともっと白鳳',   order:2,  fields:[{label:'紙屑',unit:'袋'},{label:'生ごみ',unit:'kg'},{label:'廃プラ',unit:'袋'},{label:'ペットボトル',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'LA・MU',             order:3,  fields:[{label:'可燃',unit:'kg'},{label:'不燃',unit:'kg'}] },
+  { name:'いがっこ給食',       order:4,  fields:[{label:'可燃',unit:'kg'},{label:'不燃金属',unit:'kg'},{label:'ビン割れ物',unit:'kg'},{label:'硬質プラ',unit:'kg'}] },
+  { name:'すき家',             order:5,  fields:[{label:'可燃',unit:'袋'},{label:'可燃',unit:'kg'},{label:'ビン缶PET',unit:'袋'},{label:'ビン缶PET',unit:'kg'}] },
+  { name:'セブン四十九',       order:6,  fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン緑ヶ丘東町',   order:7,  fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン東条',         order:8,  fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン平野北谷',     order:9,  fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン本町',         order:10, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン平野東町',     order:11, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブンゆめが丘',     order:12, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン忍者',         order:13, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セカンドストリート',  order:14, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'ナフコ',             order:15, fields:[{label:'可燃',unit:'kg'},{label:'ペットボトル',unit:'kg'},{label:'発泡スチロール',unit:'kg'},{label:'木くず',unit:'kg'},{label:'その他',unit:'kg'}] },
+  { name:'伊賀の街',           order:16, fields:[{label:'可燃',unit:'kg'}] },
+  { name:'ライフテクノ',       order:17, fields:[{label:'可燃',unit:'kg'},{label:'不燃',unit:'袋'}] },
+  { name:'創価学会文化会館',   order:18, fields:[{label:'古紙',unit:'kg'},{label:'可燃',unit:'kg'},{label:'その他',unit:'kg'}] },
+  { name:'農業屋',             order:20, fields:[{label:'可燃',unit:'袋'},{label:'可燃',unit:'kg'},{label:'その他',unit:'袋'},{label:'その他',unit:'kg'},{label:'段ボール',unit:'kg'}] },
+  { name:'津地方裁判所',       order:21, fields:[{label:'シュレッダー',unit:'kg'},{label:'新聞段ボール',unit:'kg'},{label:'可燃',unit:'kg'},{label:'不燃',unit:'kg'}] },
+  { name:'西松屋',             order:22, fields:[{label:'可燃',unit:'袋'},{label:'可燃',unit:'kg'},{label:'不燃',unit:'袋'},{label:'不燃',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'ビン',unit:'kg'},{label:'カン',unit:'kg'},{label:'ペットボトル',unit:'kg'}] },
+  { name:'伊賀神戸駅',         order:23, fields:[{label:'可燃',unit:'袋'},{label:'カン',unit:'袋'},{label:'ビン',unit:'袋'},{label:'その他',unit:'袋'}] },
+  { name:'イオンタウン',       order:24, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'カン',unit:'kg'},{label:'ビン',unit:'kg'},{label:'われもの',unit:'kg'},{label:'ハンガー',unit:'kg'},{label:'段ボール',unit:'kg'}] },
+  { name:'びっくりドンキー',   order:25, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'段ボール',unit:'kg'}] },
+  { name:'KFC',                order:26, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'段ボール',unit:'kg'}] },
+  { name:'コカ・コーラ',       order:27, fields:[{label:'収集',unit:'袋'}] },
+  { name:'チョーヤ梅酒',       order:28, fields:[{label:'可燃',unit:'㎥'},{label:'可燃',unit:'kg'},{label:'第2収集',unit:'㎥'},{label:'第2収集',unit:'kg'}] },
+  { name:'マックスバリュ佐那具',order:29, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'カン',unit:'kg'},{label:'ビン',unit:'kg'},{label:'われもの',unit:'kg'},{label:'アラ',unit:'kg'}] },
+  { name:'マックスバリュ上野',  order:30, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'カン',unit:'kg'},{label:'ビン',unit:'kg'},{label:'アラ',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'アルミ缶',unit:'kg'},{label:'ペットボトル',unit:'kg'},{label:'牛乳パック',unit:'kg'},{label:'発泡スチロール',unit:'kg'}] },
+  { name:'やさいの戸島屋',     order:31, fields:[{label:'可燃',unit:'袋'}] },
+  { name:'古本市場',           order:32, fields:[{label:'可燃',unit:'袋'},{label:'可燃',unit:'kg'},{label:'古紙',unit:'kg'},{label:'資源',unit:'袋'},{label:'資源',unit:'kg'}] },
+  { name:'旧上野庁舎',         order:33, fields:[{label:'ホテル可燃',unit:'kg'},{label:'ホテル不燃',unit:'kg'},{label:'図書館可燃',unit:'kg'},{label:'図書館不燃',unit:'kg'},{label:'カフェ可燃',unit:'kg'},{label:'カフェ不燃',unit:'kg'}] },
+  { name:'魚民',               order:34, fields:[{label:'生ごみ',unit:'kg'},{label:'紙',unit:'kg'},{label:'不燃ビニ',unit:'kg'},{label:'カン',unit:'kg'},{label:'ビン',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'割れ物',unit:'kg'},{label:'発泡',unit:'kg'}] },
+  { name:'厚板プレス',         order:35, fields:[{label:'可燃',unit:'kg'},{label:'不燃',unit:'kg'},{label:'その他',unit:'kg'}] },
+  { name:'伊賀庁舎',           order:36, fields:[{label:'古紙',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'その他',unit:'kg'}] },
+  { name:'法務合同庁舎',       order:37, fields:[{label:'可燃',unit:'kg'},{label:'資源ごみ',unit:'kg'},{label:'不燃',unit:'kg'}] },
+  { name:'ドラッグセイムス伊賀小田店', order:38, fields:[{label:'段ボール',unit:'kg'}] },
+  { name:'ドラッグセイムス伊賀上野店', order:39, fields:[{label:'段ボール',unit:'kg'}] },
+  { name:'飯田金属',           order:40, fields:[{label:'収集',unit:'kg'}] },
+  { name:'あみやき亭',         order:41, fields:[{label:'可燃ごみ',unit:'kg'},{label:'不燃ごみ',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'ペットボトル',unit:'kg'}] },
+  { name:'クスリのアオキ 伊賀上野店', order:42, fields:[{label:'生ごみ（前）',unit:'袋'},{label:'生ごみ（前）',unit:'kg'},{label:'生ごみ（廃）',unit:'袋'},{label:'生ごみ（廃）',unit:'kg'},{label:'廃業廃棄物',unit:'kg'}] },
+  { name:'クスリのアオキ 平野東店',   order:43, fields:[{label:'生ごみ（前）',unit:'袋'},{label:'生ごみ（前）',unit:'kg'},{label:'生ごみ（廃）',unit:'袋'},{label:'生ごみ（廃）',unit:'kg'},{label:'廃業廃棄物',unit:'kg'}] },
+  { name:'コメリ',                    order:44, fields:[{label:'可燃物',unit:'袋'},{label:'可燃物',unit:'kg'}] },
+];
+
+const DAYS = ['月','火','水','木','金','土','日'];
+const LS_PREFIX = 'keiryo_tmpl_';
+
+let currentDay = null;
+let currentScreen = 1;
+let currentPropName = null;
+
+// propList[]: {name, checked, selectedFields:[label_unit,...]}
+// checked = has been saved via detail screen
+// selectedFields = null means all fields
+let propList = [];
+
+function loadJSON(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+function fieldKey(f){ return f.label + '_' + f.unit; }
+
+// ===== DAY STATE =====
+function loadDayState(day){
+  const saved = loadJSON(LS_PREFIX + day, null);
+  if(saved && saved.order && saved.order.length > 0){
+    const list = [];
+    saved.order.forEach(name => {
+      const prop = DEFAULT_PROPERTIES.find(p => p.name === name);
+      if(!prop) return;
+      const ps = saved.props && saved.props[name] ? saved.props[name] : {};
+      list.push({ name, checked: !!ps.checked, selectedFields: ps.selectedFields || null });
+    });
+    DEFAULT_PROPERTIES.forEach(p => {
+      if(!list.find(r => r.name === p.name))
+        list.push({ name: p.name, checked: false, selectedFields: null });
+    });
+    return list;
+  }
+  return DEFAULT_PROPERTIES.map(p => ({ name: p.name, checked: false, selectedFields: null }));
+}
+
+function saveDayState(){
+  if(!currentDay) return;
+  const props = {};
+  propList.forEach(r => { props[r.name] = { checked: r.checked, selectedFields: r.selectedFields }; });
+  saveJSON(LS_PREFIX + currentDay, {
+    order: propList.map(r => r.name),
+    props
+  });
+}
+
+// ===== DAY SELECTION =====
+function selectDay(day){
+  if(currentDay) saveDayState();
+  currentDay = day;
+  DAYS.forEach(d => document.getElementById('btn'+d).classList.toggle('active', d === day));
+  propList = loadDayState(day);
+  updateToolbar();
+  renderList();
+  showScreen(1);
+}
+
+function updateToolbar(){
+  const checked = propList.filter(r => r.checked).length;
+  document.getElementById('toolbarLabel').textContent =
+    currentDay ? `${currentDay}曜日　✅${checked}件` : '曜日を選択してください';
+  document.getElementById('saveBtn').disabled = (!currentDay || checked === 0);
+}
+
+// ===== SELECT ALL / NONE =====
+function selectAll(){
+  propList.forEach(r => {
+    r.checked = true;
+    if(!r.selectedFields){
+      const prop = DEFAULT_PROPERTIES.find(p => p.name === r.name);
+      if(prop) r.selectedFields = prop.fields.map(fieldKey);
+    }
+  });
+  saveDayState(); updateToolbar(); renderList();
+}
+function selectNone(){
+  propList.forEach(r => { r.checked = false; });
+  saveDayState(); updateToolbar(); renderList();
+}
+
+// ===== SCREEN CONTROL =====
+function showScreen(n){
+  currentScreen = n;
+  document.getElementById('screen1').classList.toggle('active', n===1);
+  document.getElementById('screen2').classList.toggle('active', n===2);
+  document.getElementById('footer1').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('footer2').style.display = n===2 ? 'block' : 'none';
+  document.getElementById('backBtn').style.display  = n===2 ? 'inline-block' : 'none';
+  document.getElementById('dayBtns').style.display  = n===1 ? 'flex' : 'none';
+  document.getElementById('headerTitle').textContent =
+    n===1 ? '📋 計量メモ テンプレート' : currentPropName || '';
+  window.scrollTo(0,0);
+}
+
+function goBack(){
+  showScreen(1);
+  updateToolbar();
+  renderList();
+}
+
+// ===== RENDER LIST =====
+function renderList(){
+  const c = document.getElementById('propList');
+  if(!currentDay){
+    c.innerHTML = '<div class="empty-msg">上の曜日ボタンを選択してください</div>';
+    return;
+  }
+  c.innerHTML = '';
+  propList.forEach((row, idx) => {
+    const prop = DEFAULT_PROPERTIES.find(p => p.name === row.name);
+    if(!prop) return;
+    const selFields = row.selectedFields
+      ? prop.fields.filter(f => row.selectedFields.includes(fieldKey(f)))
+      : prop.fields;
+    const fieldStr = selFields.map(f => f.label).join('・') || '（項目未設定）';
+    const div = document.createElement('div');
+    div.className = 'prop-row';
+    div.dataset.idx = idx;
+    div.innerHTML = `
+      <input type="number" class="order-input" value="${idx+1}" min="1" max="${propList.length}"
+        onkeydown="if(event.key==='Enter'){moveToPos(${idx},this);this.blur();}"
+        onblur="resetOrderInput(${idx},this)"
+        onfocus="this.select()">
+      <div class="prop-body" onclick="openDetail('${row.name.replace(/'/g,"\\'")}')">
+        <div class="prop-name">${row.name}</div>
+        <div class="prop-sub">${fieldStr}</div>
+      </div>
+      <span class="prop-check-icon" style="cursor:pointer" title="タップでチェックを外す"
+        onclick="event.stopPropagation();${row.checked ? `uncheckProp('${row.name.replace(/'/g,"\\'")}')` : ''}"
+      >${row.checked ? '✅' : '⬜'}</span>
+      <span class="prop-arrow">›</span>`;
+    c.appendChild(div);
+  });
+}
+
+// ===== DETAIL SCREEN =====
+function openDetail(propName){
+  if(!currentDay){ alert('先に曜日を選択してください。'); return; }
+  currentPropName = propName;
+  const prop = DEFAULT_PROPERTIES.find(p => p.name === propName);
+  const row  = propList.find(r => r.name === propName);
+  if(!prop || !row) return;
+
+  document.getElementById('detailTitle').textContent = prop.name;
+  const c = document.getElementById('fieldList');
+  c.innerHTML = '';
+
+  prop.fields.forEach((f, fi) => {
+    const key = fieldKey(f);
+    const isChecked = row.selectedFields ? row.selectedFields.includes(key) : true;
+    const div = document.createElement('div');
+    div.className = 'field-row';
+    div.innerHTML = `
+      <input type="checkbox" class="field-check" id="fc_${fi}" ${isChecked ? 'checked' : ''}>
+      <label class="field-label" for="fc_${fi}">${f.label}</label>
+      <span class="field-unit">${f.unit}</span>
+      <span class="field-val">0</span>`;
+    c.appendChild(div);
+  });
+
+  showScreen(2);
+}
+
+function uncheckProp(propName){
+  const row = propList.find(r => r.name === propName);
+  if(!row) return;
+  row.checked = false;
+  row.selectedFields = null;
+  saveDayState();
+  updateToolbar();
+  renderList();
+}
+
+function saveDetail(){
+  const prop = DEFAULT_PROPERTIES.find(p => p.name === currentPropName);
+  const row  = propList.find(r => r.name === currentPropName);
+  if(!prop || !row) return;
+
+  const selected = [];
+  prop.fields.forEach((f, fi) => {
+    const cb = document.getElementById(`fc_${fi}`);
+    if(cb && cb.checked) selected.push(fieldKey(f));
+  });
+
+  row.selectedFields = selected.length > 0 ? selected : prop.fields.map(fieldKey);
+  row.checked = true;
+  saveDayState();
+  goBack();
+}
+
+// ===== TEXT SAVE =====
+function saveText(){
+  if(!currentDay) return;
+  const selected = propList.filter(r => r.checked);
+  if(selected.length === 0){ alert('物件を選択してください。'); return; }
+  let lines = [];
+  lines.push(`【${currentDay}曜日】計量メモ`);
+  lines.push(`日付：　　　年　　月　　日`);
+  lines.push('');
+  selected.forEach((row, si) => {
+    const prop = DEFAULT_PROPERTIES.find(p => p.name === row.name);
+    if(!prop) return;
+    const selFields = row.selectedFields
+      ? prop.fields.filter(f => row.selectedFields.includes(fieldKey(f)))
+      : prop.fields;
+    lines.push(`${si+1}．${prop.name}`);
+    selFields.forEach(f => lines.push(`　${f.label}：0 ${f.unit}`));
+    lines.push('');
+  });
+  lines.push('━━━━━━━━━━━━━━━━━');
+  lines.push(`${selected.length}件　（有上野清掃社）`);
+
+  const text = lines.join('\n');
+  const fname = `計量メモ_${currentDay}曜日.txt`;
+  const blob = new Blob(['\uFEFF' + text], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+}
+
+// ===== 番号移動 =====
+function moveToPos(fromIdx, input){
+  let toPos = parseInt(input.value);
+  const total = propList.length;
+  if(isNaN(toPos) || toPos < 1) toPos = 1;
+  if(toPos > total) toPos = total;
+  const toIdx = toPos - 1;
+  if(fromIdx === toIdx){ input.value = fromIdx + 1; return; }
+  const item = propList.splice(fromIdx, 1)[0];
+  propList.splice(toIdx, 0, item);
+  saveDayState();
+  renderList();
+}
+function resetOrderInput(fromIdx, input){
+  // Enterで移動済みの場合は再描画されているのでそのまま
+  // Enterなしでフォーカスが外れた場合は元の番号に戻す
+  const rows = document.querySelectorAll('.order-input');
+  if(rows[fromIdx]) rows[fromIdx].value = fromIdx + 1;
+}
+
+// ===== INIT =====
+window.onload = function(){ renderList(); };
+</script>
+</body>
+</html>
