@@ -81,6 +81,7 @@ body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f0f4f8; 
   <div class="header-row">
     <button class="back-btn" id="backBtn" onclick="goBack()">← 戻る</button>
     <div class="header-title" id="headerTitle">📋 計量メモ テンプレート</div>
+    <span id="checkedBadge" style="display:none;background:white;color:#0f766e;font-size:12px;font-weight:bold;padding:3px 8px;border-radius:12px;white-space:nowrap"></span>
   </div>
   <div class="day-btns" id="dayBtns">
     <button class="day-btn"     id="btn月" onclick="selectDay('月')">月</button>
@@ -237,6 +238,14 @@ function updateToolbar(){
   document.getElementById('toolbarLabel').textContent =
     currentDay ? `${currentDay}曜日　✅${checked}件` : '曜日を選択してください';
   document.getElementById('saveBtn').disabled = (!currentDay || checked === 0);
+  // ヘッダーバッジ
+  const badge = document.getElementById('checkedBadge');
+  if(currentDay && document.getElementById('screen1').classList.contains('active')){
+    badge.textContent = `✅ ${checked} / ${propList.length}件`;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 
 // ===== SELECT ALL / NONE =====
@@ -266,6 +275,7 @@ function showScreen(n){
   document.getElementById('dayBtns').style.display  = n===1 ? 'flex' : 'none';
   document.getElementById('headerTitle').textContent =
     n===1 ? '📋 計量メモ テンプレート' : currentPropName || '';
+  updateToolbar();
   window.scrollTo(0,0);
 }
 
@@ -409,6 +419,19 @@ function moveToPos(fromIdx, input){
   propList.splice(toIdx, 0, item);
   saveDayState();
   renderList();
+  // 移動先の物件へスクロール
+  setTimeout(()=>{
+    const rows = document.querySelectorAll('.prop-row');
+    if(rows[toIdx]){
+      const headerH = document.querySelector('.header').offsetHeight;
+      const top = rows[toIdx].getBoundingClientRect().top + window.scrollY - headerH - 8;
+      window.scrollTo({ top, behavior: 'smooth' });
+      // 一瞬ハイライト
+      rows[toIdx].style.transition = 'background 0.3s';
+      rows[toIdx].style.background = '#d1fae5';
+      setTimeout(()=>{ rows[toIdx].style.background = ''; }, 800);
+    }
+  }, 50);
 }
 function resetOrderInput(fromIdx, input){
   // Enterで移動済みの場合は再描画されているのでそのまま
