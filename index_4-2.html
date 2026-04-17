@@ -117,7 +117,10 @@ body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f0f4f8; 
   <div class="footer-inner">
     <!-- Screen 1 footer -->
     <div id="footer1">
-      <button class="btn btn-save-text" id="saveBtn" onclick="saveText()" disabled>📄 TEXT保存</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-save-text" id="saveBtn" onclick="saveText()" disabled style="flex:2">📄 TEXT保存</button>
+        <button class="btn" onclick="openDownloads()" style="flex:1;background:#e0f2fe;color:#0369a1;font-size:14px">📂 保存先</button>
+      </div>
     </div>
     <!-- Screen 2 footer -->
     <div id="footer2" style="display:none">
@@ -438,6 +441,14 @@ function resetOrderInput(fromIdx, input){
   // Enterなしでフォーカスが外れた場合は元の番号に戻す
   const rows = document.querySelectorAll('.order-input');
   if(rows[fromIdx]) rows[fromIdx].value = fromIdx + 1;
+}
+
+// ===== OPEN DOWNLOADS =====
+function openDownloads(){
+  // iOSのファイルアプリ（Downloadsフォルダ）を開く
+  window.location.href = 'shareddocuments:///private/var/mobile/Library/Mobile Documents/com~apple~CloudDocs/Downloads';
+  // 開かない場合は Files app トップへ
+  setTimeout(()=>{ window.location.href = 'shareddocuments://'; }, 300);
 }
 
 // ===== INIT =====
