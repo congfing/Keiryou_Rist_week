@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>計量メモ テンプレート</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f0f4f8; color: #333; min-height: 100vh; }
+
+/* ===== HEADER ===== */
+.header { background: #0f766e; color: white; padding: 10px 14px 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.header-title { font-size: 17px; font-weight: bold; margin-bottom: 10px; }
+.day-btns { display: flex; gap: 6px; }
+.day-btn { flex: 1; padding: 8px 0; font-size: 15px; font-weight: bold; background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; color: rgba(255,255,255,0.85); cursor: pointer; }
+.day-btn.active { background: white; color: #0f766e; border-color: white; }
+.day-btn.sat { color: #93c5fd; }
+.day-btn.sun { color: #fca5a5; }
+.day-btn.sat.active { color: #1d4ed8; }
+.day-btn.sun.active { color: #dc2626; }
+
+/* ===== MAIN ===== */
+.main { padding: 12px 14px 100px; max-width: 500px; margin: 0 auto; }
+
+/* ===== TOOLBAR ===== */
+.toolbar { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+.toolbar-label { font-size: 13px; color: #666; flex: 1; }
+.tool-btn { font-size: 12px; padding: 6px 12px; border: none; border-radius: 7px; cursor: pointer; font-weight: bold; }
+.btn-all { background: #e0f2fe; color: #0369a1; }
+.btn-none { background: #fce7f3; color: #9d174d; }
+
+/* ===== PROP ROW ===== */
+.prop-row { display: flex; align-items: center; background: white; border-radius: 10px; margin-bottom: 7px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07); padding: 10px 10px; gap: 8px; touch-action: none; }
+.prop-row.dragging { opacity: 0.4; }
+.prop-row.drag-over { border: 2px dashed #0f766e; }
+.drag-handle { background: none; border: none; color: #bbb; font-size: 20px; cursor: grab; padding: 0 4px; line-height: 1; user-select: none; }
+.prop-check { width: 22px; height: 22px; accent-color: #0f766e; cursor: pointer; flex-shrink: 0; }
+.prop-name { font-size: 14px; font-weight: 600; flex: 1; }
+.prop-row.unchecked .prop-name { color: #aaa; }
+.prop-fields { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.prop-row.unchecked .prop-fields { color: #ddd; }
+
+/* ===== GHOST ===== */
+#drag-ghost { position: fixed; background: #0f766e; color: white; padding: 8px 14px;
+  border-radius: 8px; font-size: 14px; font-weight: bold; pointer-events: none;
+  display: none; z-index: 9999; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+/* ===== FOOTER ===== */
+.footer { position: fixed; bottom: 0; left: 0; right: 0; background: white;
+  padding: 12px 16px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 50; }
+.btn-save { display: block; width: 100%; max-width: 500px; margin: 0 auto;
+  padding: 15px; background: #0f766e; color: white; border: none; border-radius: 10px;
+  font-size: 16px; font-weight: bold; cursor: pointer; }
+.btn-save:disabled { background: #94a3b8; }
+
+/* ===== EMPTY ===== */
+.empty-msg { text-align: center; color: #aaa; font-size: 14px; padding: 40px 0; }
+
+/* ===== VERSION ===== */
+.version { text-align: center; font-size: 11px; color: #ccc; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div id="drag-ghost"></div>
+
+<div class="header">
+  <div class="header-title">📋 計量メモ テンプレート</div>
+  <div class="day-btns">
+    <button class="day-btn" id="btn月" onclick="selectDay('月')">月</button>
+    <button class="day-btn" id="btn火" onclick="selectDay('火')">火</button>
+    <button class="day-btn" id="btn水" onclick="selectDay('水')">水</button>
+    <button class="day-btn" id="btn木" onclick="selectDay('木')">木</button>
+    <button class="day-btn" id="btn金" onclick="selectDay('金')">金</button>
+    <button class="day-btn sat" id="btn土" onclick="selectDay('土')">土</button>
+    <button class="day-btn sun" id="btn日" onclick="selectDay('日')">日</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="toolbar">
+    <span class="toolbar-label" id="toolbarLabel">曜日を選択してください</span>
+    <button class="tool-btn btn-all" onclick="selectAll()">全選択</button>
+    <button class="tool-btn btn-none" onclick="selectNone()">全解除</button>
+  </div>
+  <div id="propList"></div>
+  <div class="version">index_4-0.html</div>
+</div>
+
+<div class="footer">
+  <button class="btn-save" id="saveBtn" onclick="saveText()" disabled>📄 TEXT保存</button>
+</div>
+
+<script>
+// ===== DATA =====
+const DEFAULT_PROPERTIES = [
+  { name:'ほっともっと桑町',   order:1,  fields:[{label:'紙屑',unit:'袋'},{label:'生ごみ',unit:'kg'},{label:'廃プラ',unit:'袋'},{label:'ペットボトル',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'ほっともっと白鳳',   order:2,  fields:[{label:'紙屑',unit:'袋'},{label:'生ごみ',unit:'kg'},{label:'廃プラ',unit:'袋'},{label:'ペットボトル',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'LA・MU',             order:3,  fields:[{label:'可燃',unit:'kg'},{label:'不燃',unit:'kg'}] },
+  { name:'いがっこ給食',       order:4,  fields:[{label:'可燃',unit:'kg'},{label:'不燃金属',unit:'kg'},{label:'ビン割れ物',unit:'kg'},{label:'硬質プラ',unit:'kg'}] },
+  { name:'すき家',             order:5,  fields:[{label:'可燃',unit:'袋'},{label:'可燃',unit:'kg'},{label:'ビン缶PET',unit:'袋'},{label:'ビン缶PET',unit:'kg'}] },
+  { name:'セブン四十九',       order:6,  fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン緑ヶ丘東町',   order:7,  fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン東条',         order:8,  fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン平野北谷',     order:9,  fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン本町',         order:10, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン平野東町',     order:11, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブンゆめが丘',     order:12, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セブン忍者',         order:13, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'セカンドストリート',  order:14, fields:[{label:'可燃',unit:'袋'},{label:'不燃ビン缶PET',unit:'袋'},{label:'段ボール',unit:'kg'}] },
+  { name:'ナフコ',             order:15, fields:[{label:'可燃',unit:'kg'},{label:'ペットボトル',unit:'kg'},{label:'発泡スチロール',unit:'kg'},{label:'木くず',unit:'kg'},{label:'その他',unit:'kg'}] },
+  { name:'伊賀の街',           order:16, fields:[{label:'可燃',unit:'kg'}] },
+  { name:'ライフテクノ',       order:17, fields:[{label:'可燃',unit:'kg'},{label:'不燃',unit:'袋'}] },
+  { name:'創価学会文化会館',   order:18, fields:[{label:'古紙',unit:'kg'},{label:'可燃',unit:'kg'},{label:'その他',unit:'kg'}] },
+  { name:'農業屋',             order:20, fields:[{label:'可燃',unit:'袋'},{label:'可燃',unit:'kg'},{label:'その他',unit:'袋'},{label:'その他',unit:'kg'},{label:'段ボール',unit:'kg'}] },
+  { name:'津地方裁判所',       order:21, fields:[{label:'シュレッダー',unit:'kg'},{label:'新聞段ボール',unit:'kg'},{label:'可燃',unit:'kg'},{label:'不燃',unit:'kg'}] },
+  { name:'西松屋',             order:22, fields:[{label:'可燃',unit:'袋'},{label:'可燃',unit:'kg'},{label:'不燃',unit:'袋'},{label:'不燃',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'ビン',unit:'kg'},{label:'カン',unit:'kg'},{label:'ペットボトル',unit:'kg'}] },
+  { name:'伊賀神戸駅',         order:23, fields:[{label:'可燃',unit:'袋'},{label:'カン',unit:'袋'},{label:'ビン',unit:'袋'},{label:'その他',unit:'袋'}] },
+  { name:'イオンタウン',       order:24, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'カン',unit:'kg'},{label:'ビン',unit:'kg'},{label:'われもの',unit:'kg'},{label:'ハンガー',unit:'kg'},{label:'段ボール',unit:'kg'}] },
+  { name:'びっくりドンキー',   order:25, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'段ボール',unit:'kg'}] },
+  { name:'KFC',                order:26, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'段ボール',unit:'kg'}] },
+  { name:'コカ・コーラ',       order:27, fields:[{label:'収集',unit:'袋'}] },
+  { name:'チョーヤ梅酒',       order:28, fields:[{label:'可燃',unit:'㎥'},{label:'可燃',unit:'kg'},{label:'第2収集',unit:'㎥'},{label:'第2収集',unit:'kg'}] },
+  { name:'マックスバリュ佐那具',order:29, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'カン',unit:'kg'},{label:'ビン',unit:'kg'},{label:'われもの',unit:'kg'},{label:'アラ',unit:'kg'}] },
+  { name:'マックスバリュ上野',  order:30, fields:[{label:'可燃',unit:'kg'},{label:'生ごみ',unit:'kg'},{label:'カン',unit:'kg'},{label:'ビン',unit:'kg'},{label:'アラ',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'アルミ缶',unit:'kg'},{label:'ペットボトル',unit:'kg'},{label:'牛乳パック',unit:'kg'},{label:'発泡スチロール',unit:'kg'}] },
+  { name:'やさいの戸島屋',     order:31, fields:[{label:'可燃',unit:'袋'}] },
+  { name:'古本市場',           order:32, fields:[{label:'可燃',unit:'袋'},{label:'可燃',unit:'kg'},{label:'古紙',unit:'kg'},{label:'資源',unit:'袋'},{label:'資源',unit:'kg'}] },
+  { name:'旧上野庁舎',         order:33, fields:[{label:'ホテル可燃',unit:'kg'},{label:'ホテル不燃',unit:'kg'},{label:'図書館可燃',unit:'kg'},{label:'図書館不燃',unit:'kg'},{label:'カフェ可燃',unit:'kg'},{label:'カフェ不燃',unit:'kg'}] },
+  { name:'魚民',               order:34, fields:[{label:'生ごみ',unit:'kg'},{label:'紙',unit:'kg'},{label:'不燃ビニ',unit:'kg'},{label:'カン',unit:'kg'},{label:'ビン',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'割れ物',unit:'kg'},{label:'発泡',unit:'kg'}] },
+  { name:'厚板プレス',         order:35, fields:[{label:'可燃',unit:'kg'},{label:'不燃',unit:'kg'},{label:'その他',unit:'kg'}] },
+  { name:'伊賀庁舎',           order:36, fields:[{label:'古紙',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'その他',unit:'kg'}] },
+  { name:'法務合同庁舎',       order:37, fields:[{label:'可燃',unit:'kg'},{label:'資源ごみ',unit:'kg'},{label:'不燃',unit:'kg'}] },
+  { name:'ドラッグセイムス伊賀小田店', order:38, fields:[{label:'段ボール',unit:'kg'}] },
+  { name:'ドラッグセイムス伊賀上野店', order:39, fields:[{label:'段ボール',unit:'kg'}] },
+  { name:'飯田金属',           order:40, fields:[{label:'収集',unit:'kg'}] },
+  { name:'あみやき亭',         order:41, fields:[{label:'可燃ごみ',unit:'kg'},{label:'不燃ごみ',unit:'kg'},{label:'段ボール',unit:'kg'},{label:'ペットボトル',unit:'kg'}] },
+  { name:'クスリのアオキ 伊賀上野店', order:42, fields:[{label:'生ごみ（前）',unit:'袋'},{label:'生ごみ（前）',unit:'kg'},{label:'生ごみ（廃）',unit:'袋'},{label:'生ごみ（廃）',unit:'kg'},{label:'廃業廃棄物',unit:'kg'}] },
+  { name:'クスリのアオキ 平野東店',   order:43, fields:[{label:'生ごみ（前）',unit:'袋'},{label:'生ごみ（前）',unit:'kg'},{label:'生ごみ（廃）',unit:'袋'},{label:'生ごみ（廃）',unit:'kg'},{label:'廃業廃棄物',unit:'kg'}] },
+];
+
+const DAYS = ['月','火','水','木','金','土','日'];
+const LS_PREFIX = 'keiryo_tmpl_';
+
+let currentDay = null;
+// propList: array of {name, checked} in display order
+let propList = [];
+
+function loadJSON(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+function loadDayState(day){
+  const saved = loadJSON(LS_PREFIX + day, null);
+  if(saved && saved.order && saved.order.length > 0){
+    // reconstruct from saved order
+    const list = [];
+    saved.order.forEach(name => {
+      const prop = DEFAULT_PROPERTIES.find(p => p.name === name);
+      if(prop) list.push({ name, checked: saved.selected.includes(name) });
+    });
+    // append any new properties not in saved order
+    DEFAULT_PROPERTIES.forEach(p => {
+      if(!list.find(r => r.name === p.name)) list.push({ name: p.name, checked: false });
+    });
+    return list;
+  }
+  // default: all unchecked, default order
+  return DEFAULT_PROPERTIES.map(p => ({ name: p.name, checked: false }));
+}
+
+function saveDayState(){
+  if(!currentDay) return;
+  saveJSON(LS_PREFIX + currentDay, {
+    order: propList.map(r => r.name),
+    selected: propList.filter(r => r.checked).map(r => r.name)
+  });
+}
+
+// ===== DAY SELECTION =====
+function selectDay(day){
+  if(currentDay) saveDayState();
+  currentDay = day;
+  DAYS.forEach(d => {
+    const btn = document.getElementById('btn'+d);
+    btn.classList.toggle('active', d === day);
+  });
+  propList = loadDayState(day);
+  const checked = propList.filter(r => r.checked).length;
+  document.getElementById('toolbarLabel').textContent =
+    `${day}曜日　${checked}件選択中`;
+  document.getElementById('saveBtn').disabled = (checked === 0);
+  renderList();
+}
+
+// ===== SELECT ALL / NONE =====
+function selectAll(){
+  propList.forEach(r => r.checked = true);
+  saveDayState();
+  refreshAfterCheck();
+}
+function selectNone(){
+  propList.forEach(r => r.checked = false);
+  saveDayState();
+  refreshAfterCheck();
+}
+function refreshAfterCheck(){
+  const checked = propList.filter(r => r.checked).length;
+  document.getElementById('toolbarLabel').textContent =
+    currentDay ? `${currentDay}曜日　${checked}件選択中` : '曜日を選択してください';
+  document.getElementById('saveBtn').disabled = (!currentDay || checked === 0);
+  renderList();
+}
+
+// ===== RENDER =====
+function renderList(){
+  const c = document.getElementById('propList');
+  if(!currentDay){
+    c.innerHTML = '<div class="empty-msg">上の曜日ボタンを選択してください</div>';
+    return;
+  }
+  c.innerHTML = '';
+  propList.forEach((row, idx) => {
+    const prop = DEFAULT_PROPERTIES.find(p => p.name === row.name);
+    if(!prop) return;
+    const fieldStr = prop.fields.map(f => f.label + '/' + f.unit).join('・');
+    const div = document.createElement('div');
+    div.className = 'prop-row' + (row.checked ? '' : ' unchecked');
+    div.dataset.idx = idx;
+    div.innerHTML = `
+      <button class="drag-handle" data-propname="${row.name.replace(/"/g,'&quot;')}" ontouchstart="dragHandleStart(event,this)" onmousedown="dragHandleStart(event,this)">≡</button>
+      <input type="checkbox" class="prop-check" ${row.checked ? 'checked' : ''} onchange="toggleCheck(${idx}, this.checked)">
+      <div>
+        <div class="prop-name">${idx+1}．${row.name}</div>
+        <div class="prop-fields">${fieldStr}</div>
+      </div>`;
+    c.appendChild(div);
+  });
+}
+
+function toggleCheck(idx, val){
+  propList[idx].checked = val;
+  saveDayState();
+  refreshAfterCheck();
+}
+
+// ===== TEXT SAVE =====
+function saveText(){
+  if(!currentDay) return;
+  const selected = propList.filter(r => r.checked);
+  if(selected.length === 0){ alert('物件を選択してください。'); return; }
+  let lines = [];
+  lines.push(`【${currentDay}曜日】計量メモ`);
+  lines.push(`日付：　　　年　　月　　日`);
+  lines.push('');
+  selected.forEach((row, si) => {
+    const prop = DEFAULT_PROPERTIES.find(p => p.name === row.name);
+    if(!prop) return;
+    lines.push(`${si+1}．${prop.name}`);
+    prop.fields.forEach(f => {
+      lines.push(`　${f.label}：0 ${f.unit}`);
+    });
+    lines.push('');
+  });
+  lines.push('━━━━━━━━━━━━━━━━━');
+  lines.push(`${selected.length}件　（有上野清掃社）`);
+
+  const text = lines.join('\n');
+  const fname = `計量メモ_${currentDay}曜日.txt`;
+  const blob = new Blob(['\uFEFF' + text], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+}
+
+// ===== DRAG & DROP =====
+function dragHandleStart(e, el){
+  const propName = el.dataset.propname;
+  dragStart(e, propName, el);
+}
+
+const _drag = {
+  active: false, propName: null, srcIdx: -1,
+  ghost: null, overEl: null, startY: 0
+};
+
+function dragStart(e, propName, handle){
+  e.stopPropagation(); e.preventDefault();
+  const card = handle.closest('.prop-row');
+  const ghost = document.getElementById('drag-ghost');
+  ghost.textContent = propName;
+  ghost.style.display = 'block';
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  ghost.style.left = (clientX + 12) + 'px';
+  ghost.style.top  = (clientY - 20) + 'px';
+  _drag.active = true;
+  _drag.propName = propName;
+  _drag.srcIdx = propList.findIndex(r => r.name === propName);
+  _drag.startY = clientY;
+  card.classList.add('dragging');
+
+  document.addEventListener('touchmove', onDragMove, {passive:false});
+  document.addEventListener('touchend',  onDragEnd);
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup',   onDragEnd);
+}
+
+function onDragMove(e){
+  if(!_drag.active) return;
+  e.preventDefault();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const ghost = document.getElementById('drag-ghost');
+  ghost.style.left = (clientX + 12) + 'px';
+  ghost.style.top  = (clientY - 20) + 'px';
+
+  document.querySelectorAll('.prop-row').forEach(el => el.classList.remove('drag-over'));
+  const el = document.elementFromPoint(clientX, clientY);
+  const card = el ? el.closest('.prop-row') : null;
+  if(card && card.dataset.idx != _drag.srcIdx){
+    card.classList.add('drag-over');
+    _drag.overEl = card;
+  } else {
+    _drag.overEl = null;
+  }
+}
+
+function onDragEnd(e){
+  if(!_drag.active) return;
+  document.getElementById('drag-ghost').style.display = 'none';
+  document.querySelectorAll('.prop-row').forEach(el => {
+    el.classList.remove('dragging'); el.classList.remove('drag-over');
+  });
+  document.removeEventListener('touchmove', onDragMove);
+  document.removeEventListener('touchend',  onDragEnd);
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup',   onDragEnd);
+
+  if(_drag.overEl){
+    const toIdx = parseInt(_drag.overEl.dataset.idx);
+    const fromIdx = _drag.srcIdx;
+    if(fromIdx !== toIdx){
+      const item = propList.splice(fromIdx, 1)[0];
+      propList.splice(toIdx, 0, item);
+      saveDayState();
+      renderList();
+    }
+  }
+  _drag.active = false; _drag.propName = null; _drag.srcIdx = -1; _drag.overEl = null;
+}
+
+// ===== INIT =====
+window.onload = function(){
+  renderList();
+};
+</script>
+</body>
+</html>
