@@ -377,25 +377,20 @@ function saveDetail(){
 
   row.selectedFields = selected.length > 0 ? selected : prop.fields.map(fieldKey);
   row.checked = true;
-
-  // 保存した物件を1番上（index 0）に移動
-  const fromIdx = propList.findIndex(r => r.name === currentPropName);
-  if(fromIdx > 0){
-    const item = propList.splice(fromIdx, 1)[0];
-    propList.unshift(item);
-  }
+  const savedName = currentPropName;
 
   saveDayState();
   goBack();
-  // 保存した物件（1番上）の番号ボックスにフォーカス
+  // 保存した物件をビューの上部に表示・フォーカス（リスト順は変えない）
   setTimeout(()=>{
-    const firstInput = document.querySelector('.order-input');
-    if(firstInput){
+    const rows = document.querySelectorAll('.prop-row');
+    const savedIdx = propList.findIndex(r => r.name === savedName);
+    if(savedIdx >= 0 && rows[savedIdx]){
       const headerH = document.querySelector('.header').offsetHeight;
-      const top = firstInput.closest('.prop-row').getBoundingClientRect().top + window.scrollY - headerH - 8;
+      const top = rows[savedIdx].getBoundingClientRect().top + window.scrollY - headerH - 8;
       window.scrollTo({ top, behavior: 'instant' });
-      firstInput.focus();
-      firstInput.select();
+      const inp = rows[savedIdx].querySelector('.order-input');
+      if(inp){ inp.focus(); inp.select(); }
     }
   }, 50);
 }
