@@ -83,14 +83,17 @@ body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f0f4f8; 
     <div class="header-title" id="headerTitle">📋 計量メモ テンプレート</div>
     <span id="checkedBadge" style="display:none;background:white;color:#0f766e;font-size:12px;font-weight:bold;padding:3px 8px;border-radius:12px;white-space:nowrap"></span>
   </div>
-  <div class="day-btns" id="dayBtns">
-    <button class="day-btn"     id="btn月" onclick="selectDay('月')">月</button>
-    <button class="day-btn"     id="btn火" onclick="selectDay('火')">火</button>
-    <button class="day-btn"     id="btn水" onclick="selectDay('水')">水</button>
-    <button class="day-btn"     id="btn木" onclick="selectDay('木')">木</button>
-    <button class="day-btn"     id="btn金" onclick="selectDay('金')">金</button>
-    <button class="day-btn sat" id="btn土" onclick="selectDay('土')">土</button>
-    <button class="day-btn sun" id="btn日" onclick="selectDay('日')">日</button>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="day-btns" id="dayBtns" style="flex:1">
+      <button class="day-btn"     id="btn月" onclick="selectDay('月')">月</button>
+      <button class="day-btn"     id="btn火" onclick="selectDay('火')">火</button>
+      <button class="day-btn"     id="btn水" onclick="selectDay('水')">水</button>
+      <button class="day-btn"     id="btn木" onclick="selectDay('木')">木</button>
+      <button class="day-btn"     id="btn金" onclick="selectDay('金')">金</button>
+      <button class="day-btn sat" id="btn土" onclick="selectDay('土')">土</button>
+      <button class="day-btn sun" id="btn日" onclick="selectDay('日')">日</button>
+    </div>
+    <span style="font-size:10px;color:rgba(255,255,255,0.5);white-space:nowrap;flex-shrink:0">index_4-2</span>
   </div>
 </div>
 
