@@ -121,6 +121,7 @@ body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f0f4f8; 
     <!-- Screen 2 footer -->
     <div id="footer2" style="display:none">
       <button class="btn btn-primary" onclick="saveDetail()">保存して戻る ✓</button>
+      <button class="btn btn-secondary" style="background:#fee2e2;color:#dc2626" onclick="uncheckProp(currentPropName);goBack()">✅ を外して戻る</button>
     </div>
   </div>
 </div>
@@ -300,7 +301,9 @@ function renderList(){
         <div class="prop-name">${row.name}</div>
         <div class="prop-sub">${fieldStr}</div>
       </div>
-      <span class="prop-check-icon">${row.checked ? '✅' : '⬜'}</span>
+      <span class="prop-check-icon" style="cursor:pointer" title="タップでチェックを外す"
+        onclick="event.stopPropagation();${row.checked ? `uncheckProp('${row.name.replace(/'/g,"\\'")}')` : ''}"
+      >${row.checked ? '✅' : '⬜'}</span>
       <span class="prop-arrow">›</span>`;
     c.appendChild(div);
   });
@@ -332,6 +335,16 @@ function openDetail(propName){
   });
 
   showScreen(2);
+}
+
+function uncheckProp(propName){
+  const row = propList.find(r => r.name === propName);
+  if(!row) return;
+  row.checked = false;
+  row.selectedFields = null;
+  saveDayState();
+  updateToolbar();
+  renderList();
 }
 
 function saveDetail(){
